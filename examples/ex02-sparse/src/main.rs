@@ -66,7 +66,7 @@ fn main() {
     // to where it can find the font files and shader files.
     // These would normally be "resources" rather than "../../resources" - but to make it
     // work in the repo without duplicating, they are a relative path.
-    let mut context = Rltk::init_simple8x8(80, 50, "Hello RLTK World", "../../resources");
+    let (mut context, el, wc) = Rltk::init_simple8x8(80, 50, "Hello RLTK World", "../../resources");
 
     // We want to add a second layer, using an 8x16 VGA font. It looks nicer, and shows how
     // RLTK can have layers.
@@ -76,12 +76,12 @@ fn main() {
 
     // Then we initialize it; notice 80x25 (half the height, since 8x16 is twice as tall).
     // This actually returns the console number, but it's always going to be 1.
-    context.register_console(rltk::SparseConsole::init(80, 25), font);
+    context.register_console(rltk::SparseConsole::init(80, 25, &context.gl), font);
 
     // Now we create an empty state object.
-    let mut gs = State{ y : 1, going_down: true };
+    let gs = State{ y : 1, going_down: true };
 
     // Call into RLTK to run the main loop. This handles rendering, and calls back into State's tick
     // function every cycle.
-    context.main_loop(&mut gs);
+    rltk::main_loop(context, Box::new(gs), el, wc);
 }
