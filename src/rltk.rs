@@ -1,7 +1,12 @@
 use std::sync::mpsc::Receiver;
 use super::GameState;
 use std::time::{Instant};
-use super::{ font, Console, Shader, RGB, SimpleConsole };
+use super::{ font, Console, Shader, RGB, SimpleConsole, gl };
+use glutin::event::{Event, WindowEvent};
+use glutin::event_loop::{ControlFlow, EventLoop};
+use glutin::window::WindowBuilder;
+use glutin::ContextBuilder;
+use std::ffi::CStr;
 
 pub struct DisplayConsole {
     pub console : Box<Console>,
@@ -11,13 +16,12 @@ pub struct DisplayConsole {
 
 #[allow(non_snake_case)]
 pub struct Rltk {
-    //pub glfw : glfw::Glfw,
-    //pub window : glfw::Window,
-    //pub events: Receiver<(f64, glfw::WindowEvent)>,
+    //pub gl_context : glutin::windowed::ContextWrapper,
+    //pub events: glutin::event_loop::EventLoop,
     pub width_pixels : u32,
     pub height_pixels : u32,
     pub fonts : Vec<font::Font>,
-    //pub shaders : Vec<Shader>,
+    pub shaders : Vec<Shader>,
     pub consoles : Vec<DisplayConsole>,
     pub fps : f32,
     pub frame_time_ms : f32,
@@ -32,6 +36,25 @@ pub struct Rltk {
 impl Rltk {
     // Initializes an OpenGL context and a window, stores the info in the Rltk structure.
     pub fn init_raw<S: ToString>(width_pixels:u32, height_pixels:u32, window_title: S, path_to_shaders: S) -> Rltk {
+        let el = EventLoop::new();
+        let wb = WindowBuilder::new().with_title("A fantastic window!");
+        let windowed_context = ContextBuilder::new().build_windowed(wb, &el).unwrap();
+        let windowed_context = unsafe { windowed_context.make_current().unwrap() };
+        println!(
+            "Pixel format of the window's GL context: {:?}",
+            windowed_context.get_pixel_format()
+        );
+        let gl = gl::Gl::load_with(|ptr| windowed_context.get_proc_address(ptr) as *const _);
+
+        let version = unsafe {
+            let data = CStr::from_ptr(gl.GetString(gl::VERSION) as *const _)
+                .to_bytes()
+                .to_vec();
+            String::from_utf8(data).unwrap()
+        };
+
+        println!("OpenGL version {}", version);
+
         /*        
         let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
         glfw.window_hint(glfw::WindowHint::ContextVersion(3, 3));
@@ -50,22 +73,22 @@ impl Rltk {
 
         // gl: load all OpenGL function pointers
         // ---------------------------------------
-        gl::load_with(|symbol| window.get_proc_address(symbol) as *const _);        
+        gl::load_with(|symbol| window.get_proc_address(symbol) as *const _);*/
 
         // Load our basic shaders
         let vertex_path = format!("{}/console_with_bg.vs", path_to_shaders.to_string());
         let fragment_path = format!("{}/console_with_bg.fs", path_to_shaders.to_string());
-        let vs = Shader::new(&vertex_path, &fragment_path);*/
+        let vs = Shader::new(&gl, &vertex_path, &fragment_path);
 
         return Rltk{
             //glfw: glfw, 
-            //window: window, 
-            //events: events,
+            //gl_context: windowed_context, 
+            //events: el,
             width_pixels : width_pixels,
             height_pixels: height_pixels,
             fonts : Vec::new(),
             consoles: Vec::new(),
-            //shaders: vec![vs],
+            shaders: vec![vs],
             fps: 0.0,
             frame_time_ms: 0.0,
             active_console : 0,

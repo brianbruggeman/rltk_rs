@@ -175,7 +175,7 @@ impl Console for SparseConsole {
             font.bind_texture();
 
             // render container
-            shader.useProgram();
+            //shader.useProgram();
             //gl::BindVertexArray(self.VAO);
             //gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.EBO);
             //gl::BindBuffer(gl::ARRAY_BUFFER, self.VBO);
