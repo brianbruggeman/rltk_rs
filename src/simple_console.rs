@@ -1,5 +1,5 @@
 use super::{Console, Tile, RGB, color, Font, Shader};
-use gl::types::*;
+//use gl::types::*;
 use std::ptr;
 use std::mem;
 use std::os::raw::c_void;
@@ -64,6 +64,7 @@ impl SimpleConsole {
     fn init_gl_for_console() -> (u32, u32, u32) {
         let mut texture = 0;
         let (mut VBO, mut VAO, mut EBO) = (0, 0, 0);
+        /*
         unsafe {
             // Generate buffers and arrays, as well as attributes.
             gl::GenVertexArrays(1, &mut VAO);
@@ -97,6 +98,7 @@ impl SimpleConsole {
             gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
             gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
         };
+        */
         (VBO, VAO, EBO)
     }
 
@@ -159,6 +161,7 @@ impl SimpleConsole {
             screen_y += step_y;
         }
         
+        /*
         unsafe {
             gl::BindBuffer(gl::ARRAY_BUFFER, self.VBO);
             gl::BufferData(gl::ARRAY_BUFFER,
@@ -172,6 +175,7 @@ impl SimpleConsole {
                         &self.index_buffer[0] as *const i32 as *const c_void,
                         gl::STATIC_DRAW);
         }
+        */
     }
 }
 
@@ -190,10 +194,10 @@ impl Console for SimpleConsole {
 
             // render container
             shader.useProgram();
-            gl::BindVertexArray(self.VAO);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.EBO);
-            gl::BindBuffer(gl::ARRAY_BUFFER, self.VBO);
-            gl::DrawElements(gl::TRIANGLES, (self.width * self.height * 6) as i32, gl::UNSIGNED_INT, ptr::null());
+            //gl::BindVertexArray(self.VAO);
+            //gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.EBO);
+            //gl::BindBuffer(gl::ARRAY_BUFFER, self.VBO);
+            //gl::DrawElements(gl::TRIANGLES, (self.width * self.height * 6) as i32, gl::UNSIGNED_INT, ptr::null());
         }
         self.is_dirty = false;
     }

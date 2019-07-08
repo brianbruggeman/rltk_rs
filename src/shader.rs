@@ -4,7 +4,7 @@ use std::io::Read;
 use std::ptr;
 use cgmath::{Matrix, Matrix4, Vector3};
 use cgmath::prelude::*;
-use gl::types::*;
+//use gl::types::*;
 use std::str;
 
 #[allow(non_snake_case)]
@@ -19,6 +19,7 @@ pub struct Shader {
 impl Shader {
     pub fn new(vertexPath: &str, fragmentPath: &str) -> Shader {
         let mut shader = Shader { ID: 0 };
+        /*
         // 1. retrieve the vertex/fragment source code from filesystem
         let mut vShaderFile = File::open(vertexPath)
             .unwrap_or_else(|_| panic!("Failed to open {}", vertexPath));
@@ -58,7 +59,7 @@ impl Shader {
             gl::DeleteShader(vertex);
             gl::DeleteShader(fragment);
             shader.ID = ID;
-        }
+        }*/
 
         shader
     }
@@ -66,38 +67,39 @@ impl Shader {
     /// activate the shader
     /// ------------------------------------------------------------------------
     pub unsafe fn useProgram(&self) {
-        gl::UseProgram(self.ID)
+        //gl::UseProgram(self.ID)
     }
 
     /// utility uniform functions
     /// ------------------------------------------------------------------------
     pub unsafe fn setBool(&self, name: &CStr, value: bool) {
-        gl::Uniform1i(gl::GetUniformLocation(self.ID, name.as_ptr()), value as i32);
+        //gl::Uniform1i(gl::GetUniformLocation(self.ID, name.as_ptr()), value as i32);
     }
     /// ------------------------------------------------------------------------
     pub unsafe fn setInt(&self, name: &CStr, value: i32) {
-        gl::Uniform1i(gl::GetUniformLocation(self.ID, name.as_ptr()), value);
+        //gl::Uniform1i(gl::GetUniformLocation(self.ID, name.as_ptr()), value);
     }
     /// ------------------------------------------------------------------------
     pub unsafe fn setFloat(&self, name: &CStr, value: f32) {
-        gl::Uniform1f(gl::GetUniformLocation(self.ID, name.as_ptr()), value);
+        //gl::Uniform1f(gl::GetUniformLocation(self.ID, name.as_ptr()), value);
     }
     /// ------------------------------------------------------------------------
     pub unsafe fn setVector3(&self, name: &CStr, value: &Vector3<f32>) {
-        gl::Uniform3fv(gl::GetUniformLocation(self.ID, name.as_ptr()), 1, value.as_ptr());
+        //gl::Uniform3fv(gl::GetUniformLocation(self.ID, name.as_ptr()), 1, value.as_ptr());
     }
     /// ------------------------------------------------------------------------
     pub unsafe fn setVec3(&self, name: &CStr, x: f32, y: f32, z: f32) {
-        gl::Uniform3f(gl::GetUniformLocation(self.ID, name.as_ptr()), x, y, z);
+        //gl::Uniform3f(gl::GetUniformLocation(self.ID, name.as_ptr()), x, y, z);
     }
     /// ------------------------------------------------------------------------
     pub unsafe fn setMat4(&self, name: &CStr, mat: &Matrix4<f32>) {
-        gl::UniformMatrix4fv(gl::GetUniformLocation(self.ID, name.as_ptr()), 1, gl::FALSE, mat.as_ptr());
+        //gl::UniformMatrix4fv(gl::GetUniformLocation(self.ID, name.as_ptr()), 1, gl::FALSE, mat.as_ptr());
     }
 
     /// utility function for checking shader compilation/linking errors.
     /// ------------------------------------------------------------------------
     unsafe fn checkCompileErrors(&self, shader: u32, type_: &str) {
+        /*
         let mut success = gl::FALSE as GLint;
         let mut infoLog = Vec::with_capacity(1024);
         infoLog.set_len(1024 - 1); // subtract 1 to skip the trailing null character
@@ -121,12 +123,13 @@ impl Shader {
                          str::from_utf8(&infoLog).unwrap());
             }
         }
-
+        */
     }
 
     /// Only used in 4.9 Geometry shaders - ignore until then (shader.h in original C++)
     pub fn with_geometry_shader(vertexPath: &str, fragmentPath: &str, geometryPath: &str) -> Self {
         let mut shader = Shader { ID: 0 };
+        /*
         // 1. retrieve the vertex/fragment source code from filesystem
         let mut vShaderFile = File::open(vertexPath)
             .unwrap_or_else(|_| panic!("Failed to open {}", vertexPath));
@@ -182,7 +185,7 @@ impl Shader {
             gl::DeleteShader(geometry);
             shader.ID = ID;
         }
-
+        */
         shader
     }
 }

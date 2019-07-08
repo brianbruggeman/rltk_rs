@@ -1,11 +1,7 @@
-extern crate glfw;
-use self::glfw::{Context, Action};
-extern crate gl;
 use std::sync::mpsc::Receiver;
 use super::GameState;
 use std::time::{Instant};
 use super::{ font, Console, Shader, RGB, SimpleConsole };
-pub use glfw::Key;
 
 pub struct DisplayConsole {
     pub console : Box<Console>,
@@ -15,18 +11,18 @@ pub struct DisplayConsole {
 
 #[allow(non_snake_case)]
 pub struct Rltk {
-    pub glfw : glfw::Glfw,
-    pub window : glfw::Window,
-    pub events: Receiver<(f64, glfw::WindowEvent)>,
+    //pub glfw : glfw::Glfw,
+    //pub window : glfw::Window,
+    //pub events: Receiver<(f64, glfw::WindowEvent)>,
     pub width_pixels : u32,
     pub height_pixels : u32,
     pub fonts : Vec<font::Font>,
-    pub shaders : Vec<Shader>,
+    //pub shaders : Vec<Shader>,
     pub consoles : Vec<DisplayConsole>,
     pub fps : f32,
     pub frame_time_ms : f32,
     pub active_console : usize,
-    pub key : Option<Key>,
+    //pub key : Option<Key>,
     mouse_pos: (i32, i32),
     pub left_click: bool,
 }
@@ -35,7 +31,8 @@ pub struct Rltk {
 #[allow(non_snake_case)]
 impl Rltk {
     // Initializes an OpenGL context and a window, stores the info in the Rltk structure.
-    pub fn init_raw<S: ToString>(width_pixels:u32, height_pixels:u32, window_title: S, path_to_shaders: S) -> Rltk {        
+    pub fn init_raw<S: ToString>(width_pixels:u32, height_pixels:u32, window_title: S, path_to_shaders: S) -> Rltk {
+        /*        
         let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
         glfw.window_hint(glfw::WindowHint::ContextVersion(3, 3));
         glfw.window_hint(glfw::WindowHint::OpenGlProfile(glfw::OpenGlProfileHint::Core));
@@ -58,21 +55,21 @@ impl Rltk {
         // Load our basic shaders
         let vertex_path = format!("{}/console_with_bg.vs", path_to_shaders.to_string());
         let fragment_path = format!("{}/console_with_bg.fs", path_to_shaders.to_string());
-        let vs = Shader::new(&vertex_path, &fragment_path);
+        let vs = Shader::new(&vertex_path, &fragment_path);*/
 
         return Rltk{
-            glfw: glfw, 
-            window: window, 
-            events: events,
+            //glfw: glfw, 
+            //window: window, 
+            //events: events,
             width_pixels : width_pixels,
             height_pixels: height_pixels,
             fonts : Vec::new(),
             consoles: Vec::new(),
-            shaders: vec![vs],
+            //shaders: vec![vs],
             fps: 0.0,
             frame_time_ms: 0.0,
             active_console : 0,
-            key: None,
+            //key: None,
             mouse_pos: (0,0),
             left_click: false,
         };
@@ -98,6 +95,7 @@ impl Rltk {
 
     // Message pump handler for RLTK applications
     fn process_events(&mut self) {
+        /*
         self.key = None; // To avoid infinite repetition
         self.left_click = false;
 
@@ -130,6 +128,7 @@ impl Rltk {
                 _ => { }
             }
         }
+        */
     }
 
     // Runs the RLTK application, calling into the provided gamestate handler every tick.
@@ -139,7 +138,8 @@ impl Rltk {
         let mut prev_ms = now.elapsed().as_millis();
         let mut frames = 0;
 
-        while !self.window.should_close() {
+        while true {
+        //while !self.window.should_close() {
             let now_seconds = now.elapsed().as_secs();
             frames += 1;
 
@@ -167,21 +167,21 @@ impl Rltk {
 
             // Clear the screen
             unsafe {
-                gl::ClearColor(0.2, 0.3, 0.3, 1.0);
-                gl::Clear(gl::COLOR_BUFFER_BIT);
+                //gl::ClearColor(0.2, 0.3, 0.3, 1.0);
+               // gl::Clear(gl::COLOR_BUFFER_BIT);
             }
             
             // Tell each console to draw itself
             for cons in self.consoles.iter_mut() {
-                let font = &self.fonts[cons.font_index];
-                let shader = &self.shaders[cons.shader_index];
-                cons.console.gl_draw(font, shader);
+                //let font = &self.fonts[cons.font_index];
+                //let shader = &self.shaders[cons.shader_index];
+                //cons.console.gl_draw(font, shader);
             } 
 
             // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
             // -------------------------------------------------------------------------------
-            self.window.swap_buffers();
-            self.glfw.poll_events();
+            //self.window.swap_buffers();
+            //self.glfw.poll_events();
         }
     }
 

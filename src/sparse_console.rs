@@ -1,5 +1,5 @@
 use super::{Console, RGB, Font, Shader};
-use gl::types::*;
+//use gl::types::*;
 use std::ptr;
 use std::mem;
 use std::os::raw::c_void;
@@ -55,6 +55,7 @@ impl SparseConsole {
     #[allow(non_snake_case)]
     fn init_gl_for_console() -> (u32, u32, u32) {
         let (mut VBO, mut VAO, mut EBO) = (0, 0, 0);
+        /*
         unsafe {
             // Generate buffers and arrays, as well as attributes.
             gl::GenVertexArrays(1, &mut VAO);
@@ -79,6 +80,7 @@ impl SparseConsole {
             gl::VertexAttribPointer(3, 2, gl::FLOAT, gl::FALSE, stride, (9 * mem::size_of::<GLfloat>()) as *const c_void);
             gl::EnableVertexAttribArray(3);
         };
+        */
         (VBO, VAO, EBO)
     }
 
@@ -141,6 +143,7 @@ impl SparseConsole {
             index_count += 4;
         }
         
+        /*
         unsafe {
             gl::BindBuffer(gl::ARRAY_BUFFER, self.VBO);
             gl::BufferData(gl::ARRAY_BUFFER,
@@ -154,6 +157,7 @@ impl SparseConsole {
                         &self.index_buffer[0] as *const i32 as *const c_void,
                         gl::STATIC_DRAW);
         }
+        */
     }
 }
 
@@ -172,10 +176,10 @@ impl Console for SparseConsole {
 
             // render container
             shader.useProgram();
-            gl::BindVertexArray(self.VAO);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.EBO);
-            gl::BindBuffer(gl::ARRAY_BUFFER, self.VBO);
-            gl::DrawElements(gl::TRIANGLES, (self.tiles.len() * 6) as i32, gl::UNSIGNED_INT, ptr::null());
+            //gl::BindVertexArray(self.VAO);
+            //gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.EBO);
+            //gl::BindBuffer(gl::ARRAY_BUFFER, self.VBO);
+            //gl::DrawElements(gl::TRIANGLES, (self.tiles.len() * 6) as i32, gl::UNSIGNED_INT, ptr::null());
         }
         self.is_dirty = false;
     }

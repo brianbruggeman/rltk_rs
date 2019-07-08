@@ -1,7 +1,6 @@
 #[allow(dead_code)]
 extern crate image;
-use image::GenericImage;
-extern crate gl;
+use image::GenericImageView;
 use std::os::raw::c_void;
 
 #[derive(PartialEq, Clone)]
@@ -29,6 +28,7 @@ impl Font {
     // Load a font, and allocate it as an OpenGL resource. Returns the OpenGL binding number (which is also set in the structure).
     pub fn setup_gl_texture(&mut self) -> u32 {
         let mut texture : u32 = 0;
+        /*
         unsafe {
             gl::GenTextures(1, &mut texture);
             gl::BindTexture(gl::TEXTURE_2D, texture); // all upcoming GL_TEXTURE_2D operations now have effect on this texture object
@@ -52,7 +52,7 @@ impl Font {
                         gl::UNSIGNED_BYTE,
                         &data[0] as *const u8 as *const c_void);
             gl::GenerateMipmap(gl::TEXTURE_2D);
-        }
+        }*/
 
         self.gl_id = Some(texture);
 
@@ -62,7 +62,7 @@ impl Font {
     // Sets this font file as the active texture
     pub fn bind_texture(&self) {
         unsafe {
-            gl::BindTexture(gl::TEXTURE_2D, self.gl_id.unwrap());
+            //gl::BindTexture(gl::TEXTURE_2D, self.gl_id.unwrap());
         }
     }
 }

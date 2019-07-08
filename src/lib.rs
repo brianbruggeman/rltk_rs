@@ -1,3 +1,12 @@
+pub mod gl {
+    pub use self::Gles2 as Gl;
+    include!(concat!(env!("OUT_DIR"), "/gl_bindings.rs"));
+}
+
+pub struct Gl {
+    pub gl: gl::Gl,
+}
+
 mod color;
 mod font;
 mod shader;
@@ -17,7 +26,6 @@ pub use self::console::*;
 pub use self::shader::Shader;
 pub use self::simple_console::SimpleConsole;
 pub use self::sparse_console::SparseConsole;
-pub use glfw::Key;
 pub use self::fieldofview::field_of_view;
 pub use self::geometry::{ distance2d, distance2d_squared };
 pub use self::dijkstra::DijkstraMap;
