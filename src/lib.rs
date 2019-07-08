@@ -19,6 +19,7 @@ mod geometry;
 mod dijkstra;
 mod astar;
 
+pub use self::rltk::main_loop;
 pub use self::rltk::Rltk;
 pub use self::color::*;
 pub use self::font::Font;

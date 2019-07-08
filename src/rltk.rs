@@ -6,7 +6,9 @@ use glutin::event::{Event, WindowEvent};
 use glutin::event_loop::{ControlFlow, EventLoop};
 use glutin::window::WindowBuilder;
 use glutin::ContextBuilder;
+use glutin::dpi::LogicalSize;
 use std::ffi::CStr;
+extern crate winit;
 
 pub struct DisplayConsole {
     pub console : Box<Console>,
@@ -16,8 +18,7 @@ pub struct DisplayConsole {
 
 #[allow(non_snake_case)]
 pub struct Rltk {
-    //pub gl_context : glutin::windowed::ContextWrapper,
-    //pub events: glutin::event_loop::EventLoop,
+    pub gl : gl::Gles2,
     pub width_pixels : u32,
     pub height_pixels : u32,
     pub fonts : Vec<font::Font>,
@@ -29,61 +30,28 @@ pub struct Rltk {
     //pub key : Option<Key>,
     mouse_pos: (i32, i32),
     pub left_click: bool,
+    running: bool
 }
 
 #[allow(dead_code)]
 #[allow(non_snake_case)]
 impl Rltk {
     // Initializes an OpenGL context and a window, stores the info in the Rltk structure.
-    pub fn init_raw<S: ToString>(width_pixels:u32, height_pixels:u32, window_title: S, path_to_shaders: S) -> Rltk {
+    pub fn init_raw<S: ToString>(width_pixels:u32, height_pixels:u32, window_title: S, path_to_shaders: S) -> ( Rltk, glutin::event_loop::EventLoop<()>, glutin::WindowedContext<glutin::PossiblyCurrent> ) {
         let el = EventLoop::new();
-        let wb = WindowBuilder::new().with_title("A fantastic window!");
+        let wb = WindowBuilder::new().with_title(window_title.to_string()).with_inner_size(LogicalSize::new(width_pixels as f64, height_pixels as f64));
         let windowed_context = ContextBuilder::new().build_windowed(wb, &el).unwrap();
         let windowed_context = unsafe { windowed_context.make_current().unwrap() };
-        println!(
-            "Pixel format of the window's GL context: {:?}",
-            windowed_context.get_pixel_format()
-        );
+
         let gl = gl::Gl::load_with(|ptr| windowed_context.get_proc_address(ptr) as *const _);
-
-        let version = unsafe {
-            let data = CStr::from_ptr(gl.GetString(gl::VERSION) as *const _)
-                .to_bytes()
-                .to_vec();
-            String::from_utf8(data).unwrap()
-        };
-
-        println!("OpenGL version {}", version);
-
-        /*        
-        let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
-        glfw.window_hint(glfw::WindowHint::ContextVersion(3, 3));
-        glfw.window_hint(glfw::WindowHint::OpenGlProfile(glfw::OpenGlProfileHint::Core));
-        #[cfg(target_os = "macos")]
-        glfw.window_hint(glfw::WindowHint::OpenGlForwardCompat(true));
-
-        let (mut window, events) = glfw.create_window(width_pixels, height_pixels, &window_title.to_string(), glfw::WindowMode::Windowed)
-        .expect("Failed to create GLFW window");
-
-        window.make_current();
-        window.set_key_polling(true);
-        window.set_cursor_pos_polling(true);
-        window.set_mouse_button_polling(true);
-        window.set_framebuffer_size_polling(true);
-
-        // gl: load all OpenGL function pointers
-        // ---------------------------------------
-        gl::load_with(|symbol| window.get_proc_address(symbol) as *const _);*/
 
         // Load our basic shaders
         let vertex_path = format!("{}/console_with_bg.vs", path_to_shaders.to_string());
         let fragment_path = format!("{}/console_with_bg.fs", path_to_shaders.to_string());
         let vs = Shader::new(&gl, &vertex_path, &fragment_path);
 
-        return Rltk{
-            //glfw: glfw, 
-            //gl_context: windowed_context, 
-            //events: el,
+        return (Rltk{
+            gl: gl,
             width_pixels : width_pixels,
             height_pixels: height_pixels,
             fonts : Vec::new(),
@@ -95,123 +63,32 @@ impl Rltk {
             //key: None,
             mouse_pos: (0,0),
             left_click: false,
-        };
+            running: true
+        }, el, windowed_context);
     }
 
     // Quick initialization for when you just want an 8x8 font terminal
-    pub fn init_simple8x8<S: ToString>(width_chars : u32, height_chars: u32, window_title: S, path_to_shaders: S) -> Rltk {
+    pub fn init_simple8x8<S: ToString>(width_chars : u32, height_chars: u32, window_title: S, path_to_shaders: S) -> ( Rltk, glutin::event_loop::EventLoop<()>, glutin::WindowedContext<glutin::PossiblyCurrent> ) {
         let font_path = format!("{}/terminal8x8.jpg", &path_to_shaders.to_string());
-        let mut context = Rltk::init_raw(width_chars * 8, height_chars * 8, window_title, path_to_shaders);
+        let (mut context, el, wc) = Rltk::init_raw(width_chars * 8, height_chars * 8, window_title, path_to_shaders);
         let font = context.register_font(font::Font::load(&font_path.to_string(), (8,8)));
-        context.register_console(SimpleConsole::init(width_chars, height_chars), font);
-        context
+        context.register_console(SimpleConsole::init(width_chars, height_chars, &context.gl), font);
+        (context, el, wc)
     }
 
     // Quick initialization for when you just want an 8x16 VGA font terminal
-    pub fn init_simple8x16<S: ToString>(width_chars : u32, height_chars: u32, window_title: S, path_to_shaders: S) -> Rltk {
+    pub fn init_simple8x16<S: ToString>(width_chars : u32, height_chars: u32, window_title: S, path_to_shaders: S) -> ( Rltk, glutin::event_loop::EventLoop<()>, glutin::WindowedContext<glutin::PossiblyCurrent> ) {
         let font_path = format!("{}/vga8x16.jpg", &path_to_shaders.to_string());
-        let mut context = Rltk::init_raw(width_chars * 8, height_chars * 16, window_title, path_to_shaders);
+        let (mut context, el, wc) = Rltk::init_raw(width_chars * 8, height_chars * 16, window_title, path_to_shaders);
         let font = context.register_font(font::Font::load(&font_path.to_string(), (8,16)));
-        context.register_console(SimpleConsole::init(width_chars, height_chars), font);
-        context
-    }
-
-    // Message pump handler for RLTK applications
-    fn process_events(&mut self) {
-        /*
-        self.key = None; // To avoid infinite repetition
-        self.left_click = false;
-
-        for (_, event) in glfw::flush_messages(&self.events) {
-
-            match event {
-                glfw::WindowEvent::FramebufferSize(width, height) => {
-                    // make sure the viewport matches the new window dimensions; note that width and
-                    // height will be significantly larger than specified on retina displays.
-                    unsafe { gl::Viewport(0, 0, width, height) }
-                }
-
-                glfw::WindowEvent::Key(KEY, _, Action::Press, _) => {
-                    self.key = Some(KEY);
-                }
-
-                glfw::WindowEvent::Key(KEY, _, Action::Repeat, _) => {
-                    self.key = Some(KEY);
-                }
-
-                glfw::WindowEvent::CursorPos(x, y) => {
-                    self.mouse_pos.0 = x as i32;
-                    self.mouse_pos.1 = y as i32;
-                }
-
-                glfw::WindowEvent::MouseButton(glfw::MouseButton::Button1, Action::Press, _) => {
-                    self.left_click = true;
-                }
-
-                _ => { }
-            }
-        }
-        */
-    }
-
-    // Runs the RLTK application, calling into the provided gamestate handler every tick.
-    pub fn main_loop(&mut self, gamestate: &mut GameState) {
-        let now = Instant::now();
-        let mut prev_seconds = now.elapsed().as_secs();
-        let mut prev_ms = now.elapsed().as_millis();
-        let mut frames = 0;
-
-        while true {
-        //while !self.window.should_close() {
-            let now_seconds = now.elapsed().as_secs();
-            frames += 1;
-
-            if now_seconds > prev_seconds {
-                self.fps = frames as f32 / (now_seconds - prev_seconds) as f32;
-                frames = 0;
-                prev_seconds = now_seconds;
-            }
-
-            let now_ms = now.elapsed().as_millis();
-            if now_ms > prev_ms {
-                self.frame_time_ms = (now_ms - prev_ms) as f32;
-                prev_ms = now_ms;
-            }
-
-            // events
-            // -----
-            self.process_events();
-            gamestate.tick(self);
-
-            // Console structure - doesn't really have to be every frame...
-            for cons in self.consoles.iter_mut() {
-                cons.console.rebuild_if_dirty();
-            }
-
-            // Clear the screen
-            unsafe {
-                //gl::ClearColor(0.2, 0.3, 0.3, 1.0);
-               // gl::Clear(gl::COLOR_BUFFER_BIT);
-            }
-            
-            // Tell each console to draw itself
-            for cons in self.consoles.iter_mut() {
-                //let font = &self.fonts[cons.font_index];
-                //let shader = &self.shaders[cons.shader_index];
-                //cons.console.gl_draw(font, shader);
-            } 
-
-            // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
-            // -------------------------------------------------------------------------------
-            //self.window.swap_buffers();
-            //self.glfw.poll_events();
-        }
-    }
+        context.register_console(SimpleConsole::init(width_chars, height_chars, &context.gl), font);
+        (context, el, wc)
+    }    
 
     // Registers a font, and returns its handle number. Also loads it into OpenGL.
     pub fn register_font(&mut self, mut font : font::Font) -> usize {
-        font.setup_gl_texture();
-        font.bind_texture();
+        font.setup_gl_texture(&self.gl);
+        font.bind_texture(&self.gl);
         self.fonts.push(font);
         self.fonts.len()-1
     }
@@ -238,8 +115,8 @@ impl Rltk {
 
 impl Console for Rltk {
     // A couple of ones we'll never use
-    fn rebuild_if_dirty(&mut self) {}
-    fn gl_draw(&mut self, _font : &font::Font, _shader : &Shader) {}
+    fn rebuild_if_dirty(&mut self, _gl : &gl::Gles2) {}
+    fn gl_draw(&mut self, _font : &font::Font, _shader : &Shader, _gl : &gl::Gles2) {}
 
     // Implement pass-through to active console
 
@@ -248,4 +125,76 @@ impl Console for Rltk {
     fn cls_bg(&mut self, background : RGB) { self.consoles[self.active_console].console.cls_bg(background); }
     fn print(&mut self, x:i32, y:i32, output:&str) { self.consoles[self.active_console].console.print(x, y, output); }
     fn print_color(&mut self, x:i32, y:i32, fg:RGB, bg:RGB, output:&str) { self.consoles[self.active_console].console.print_color(x,y,fg,bg,output); }
+}
+
+// Runs the RLTK application, calling into the provided gamestate handler every tick.
+pub fn main_loop(mut rltk : Rltk, mut gamestate: Box<GameState>, el: glutin::event_loop::EventLoop<()>, wc : glutin::WindowedContext<glutin::PossiblyCurrent>) {
+    let now = Instant::now();
+    let mut prev_seconds = now.elapsed().as_secs();
+    let mut prev_ms = now.elapsed().as_millis();
+    let mut frames = 0;
+
+    el.run(move |event, _, control_flow| {
+        //println!("{:?}", event);
+        *control_flow = ControlFlow::Poll;
+
+        match event {
+            Event::LoopDestroyed => return,
+            Event::WindowEvent { ref event, .. } => match event {
+                WindowEvent::Resized(logical_size) => {
+                    let dpi_factor = wc.window().hidpi_factor();
+                    wc.resize(logical_size.to_physical(dpi_factor));
+                }
+                WindowEvent::RedrawRequested => {
+                    //tock(&mut rltk, &mut gamestate, &mut frames, &mut prev_seconds, &mut prev_ms, &now);
+                    //wc.swap_buffers().unwrap();
+                }
+                WindowEvent::CloseRequested => {
+                    *control_flow = ControlFlow::Exit
+                }
+                _ => (),
+            },
+            _ => (),
+        }
+
+        tock(&mut rltk, &mut gamestate, &mut frames, &mut prev_seconds, &mut prev_ms, &now);
+        wc.swap_buffers().unwrap();
+    });
+}
+
+fn tock(rltk : &mut Rltk, gamestate: &mut Box<GameState>, frames: &mut i32, prev_seconds : &mut u64, prev_ms : &mut u128, now : &Instant) {    
+    let now_seconds = now.elapsed().as_secs();
+    *frames += 1;
+
+    if now_seconds > *prev_seconds {
+        rltk.fps = *frames as f32 / (now_seconds - *prev_seconds) as f32;
+        *frames = 0;
+        *prev_seconds = now_seconds;
+    }
+
+    let now_ms = now.elapsed().as_millis();
+    if now_ms > *prev_ms {
+        rltk.frame_time_ms = (now_ms - *prev_ms) as f32;
+        *prev_ms = now_ms;
+    }
+
+    gamestate.tick(rltk);
+
+    // Console structure - doesn't really have to be every frame...
+    for cons in rltk.consoles.iter_mut() {
+        cons.console.rebuild_if_dirty(&rltk.gl);
+    }
+
+    // Clear the screen
+    unsafe {
+        rltk.gl.ClearColor(0.2, 0.3, 0.3, 1.0);
+        rltk.gl.Clear(gl::COLOR_BUFFER_BIT);
+    }
+    
+    // Tell each console to draw itself
+    for cons in rltk.consoles.iter_mut() {
+        let font = &rltk.fonts[cons.font_index];
+        let shader = &rltk.shaders[cons.shader_index];
+        cons.console.gl_draw(font, shader, &rltk.gl);
+    } 
 }
