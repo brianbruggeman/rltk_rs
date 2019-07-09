@@ -2,9 +2,7 @@
 extern crate image;
 use image::GenericImageView;
 use std::os::raw::c_void;
-use gl::types::*;
 use super::gl;
-use super::Gl;
 
 #[derive(PartialEq, Clone)]
 pub struct Font {

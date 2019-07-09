@@ -4,7 +4,6 @@ use std::ptr;
 use std::mem;
 use std::os::raw::c_void;
 use super::gl;
-use super::Gl;
 use gl::types::*;
 
 #[allow(non_snake_case)]

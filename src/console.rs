@@ -1,6 +1,5 @@
 use super::{RGB, Font, Shader};
 use super::gl;
-use super::Gl;
 
 pub struct Tile {
     pub glyph: u8,

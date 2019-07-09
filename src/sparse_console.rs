@@ -5,8 +5,6 @@ use std::mem;
 use std::os::raw::c_void;
 use gl::types::*;
 use super::gl;
-use super::Gl;
-use gl::types::*;
 
 pub struct SparseTile {
     pub idx : usize,

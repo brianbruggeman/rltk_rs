@@ -7,7 +7,6 @@ use cgmath::prelude::*;
 use gl::types::*;
 use std::str;
 use super::gl;
-use super::Gl;
 
 #[allow(non_snake_case)]
 pub struct Shader {

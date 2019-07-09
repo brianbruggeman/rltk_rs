@@ -1,4 +1,3 @@
-use std::sync::mpsc::Receiver;
 use super::GameState;
 use std::time::{Instant};
 use super::{ font, Console, Shader, RGB, SimpleConsole, gl };
@@ -7,7 +6,6 @@ use glutin::event_loop::{ControlFlow, EventLoop};
 use glutin::window::WindowBuilder;
 use glutin::ContextBuilder;
 use glutin::dpi::LogicalSize;
-use std::ffi::CStr;
 extern crate winit;
 
 pub struct DisplayConsole {
@@ -27,10 +25,9 @@ pub struct Rltk {
     pub fps : f32,
     pub frame_time_ms : f32,
     pub active_console : usize,
-    //pub key : Option<Key>,
+    pub key : Option<glutin::event::VirtualKeyCode>,
     mouse_pos: (i32, i32),
     pub left_click: bool,
-    running: bool
 }
 
 #[allow(dead_code)]
@@ -60,10 +57,9 @@ impl Rltk {
             fps: 0.0,
             frame_time_ms: 0.0,
             active_console : 0,
-            //key: None,
+            key: None,
             mouse_pos: (0,0),
             left_click: false,
-            running: true
         }, el, windowed_context);
     }
 
@@ -128,6 +124,7 @@ impl Console for Rltk {
 }
 
 // Runs the RLTK application, calling into the provided gamestate handler every tick.
+#[allow(non_snake_case)]
 pub fn main_loop(mut rltk : Rltk, mut gamestate: Box<GameState>, el: glutin::event_loop::EventLoop<()>, wc : glutin::WindowedContext<glutin::PossiblyCurrent>) {
     let now = Instant::now();
     let mut prev_seconds = now.elapsed().as_secs();
@@ -137,6 +134,14 @@ pub fn main_loop(mut rltk : Rltk, mut gamestate: Box<GameState>, el: glutin::eve
     el.run(move |event, _, control_flow| {
         //println!("{:?}", event);
         *control_flow = ControlFlow::Poll;
+        rltk.left_click = false;
+        rltk.key = None;
+
+        if event == Event::EventsCleared {
+            //println!("tock");
+            tock(&mut rltk, &mut gamestate, &mut frames, &mut prev_seconds, &mut prev_ms, &now);
+            wc.swap_buffers().unwrap();
+        }
 
         match event {
             Event::LoopDestroyed => return,
@@ -147,18 +152,37 @@ pub fn main_loop(mut rltk : Rltk, mut gamestate: Box<GameState>, el: glutin::eve
                 }
                 WindowEvent::RedrawRequested => {
                     //tock(&mut rltk, &mut gamestate, &mut frames, &mut prev_seconds, &mut prev_ms, &now);
-                    //wc.swap_buffers().unwrap();
+                    wc.swap_buffers().unwrap();
                 }
                 WindowEvent::CloseRequested => {
                     *control_flow = ControlFlow::Exit
                 }
+
+                WindowEvent::CursorMoved{device_id : _,  position: pos, modifiers: _} => {
+                    rltk.mouse_pos = (pos.x as i32, pos.y as i32);
+                }
+
+                WindowEvent::MouseInput{ device_id : _, state: _, button: _, modifiers: _} => {
+                    rltk.left_click = true;
+                }
+
+                WindowEvent::KeyboardInput { device_id : _, input } => {
+                    match input.state {
+                        _Pressed => {
+                            let key = input.virtual_keycode.unwrap();
+                            rltk.key = Some(key);
+                        }
+                        _ => {}
+                    }
+                }                
+
                 _ => (),
             },
             _ => (),
         }
 
-        tock(&mut rltk, &mut gamestate, &mut frames, &mut prev_seconds, &mut prev_ms, &now);
-        wc.swap_buffers().unwrap();
+        //tock(&mut rltk, &mut gamestate, &mut frames, &mut prev_seconds, &mut prev_ms, &now);
+        //wc.swap_buffers().unwrap();
     });
 }
 
