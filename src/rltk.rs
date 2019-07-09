@@ -14,6 +14,11 @@ pub struct DisplayConsole {
     pub font_index : usize
 }
 
+struct WrappedContext {
+    el : glutin::event_loop::EventLoop<()>, 
+    wc : glutin::WindowedContext<glutin::PossiblyCurrent>
+}
+
 #[allow(non_snake_case)]
 pub struct Rltk {
     pub gl : gl::Gles2,
@@ -28,13 +33,14 @@ pub struct Rltk {
     pub key : Option<glutin::event::VirtualKeyCode>,
     mouse_pos: (i32, i32),
     pub left_click: bool,
+    context_wrapper : Option<WrappedContext>
 }
 
 #[allow(dead_code)]
 #[allow(non_snake_case)]
 impl Rltk {
     // Initializes an OpenGL context and a window, stores the info in the Rltk structure.
-    pub fn init_raw<S: ToString>(width_pixels:u32, height_pixels:u32, window_title: S, path_to_shaders: S) -> ( Rltk, glutin::event_loop::EventLoop<()>, glutin::WindowedContext<glutin::PossiblyCurrent> ) {
+    pub fn init_raw<S: ToString>(width_pixels:u32, height_pixels:u32, window_title: S, path_to_shaders: S) -> Rltk {
         let el = EventLoop::new();
         let wb = WindowBuilder::new().with_title(window_title.to_string()).with_inner_size(LogicalSize::new(width_pixels as f64, height_pixels as f64));
         let windowed_context = ContextBuilder::new().build_windowed(wb, &el).unwrap();
@@ -47,7 +53,7 @@ impl Rltk {
         let fragment_path = format!("{}/console_with_bg.fs", path_to_shaders.to_string());
         let vs = Shader::new(&gl, &vertex_path, &fragment_path);
 
-        return (Rltk{
+        Rltk{
             gl: gl,
             width_pixels : width_pixels,
             height_pixels: height_pixels,
@@ -60,25 +66,26 @@ impl Rltk {
             key: None,
             mouse_pos: (0,0),
             left_click: false,
-        }, el, windowed_context);
+            context_wrapper: Some(WrappedContext{ el: el, wc: windowed_context })
+        }
     }
 
     // Quick initialization for when you just want an 8x8 font terminal
-    pub fn init_simple8x8<S: ToString>(width_chars : u32, height_chars: u32, window_title: S, path_to_shaders: S) -> ( Rltk, glutin::event_loop::EventLoop<()>, glutin::WindowedContext<glutin::PossiblyCurrent> ) {
+    pub fn init_simple8x8<S: ToString>(width_chars : u32, height_chars: u32, window_title: S, path_to_shaders: S) -> Rltk {
         let font_path = format!("{}/terminal8x8.jpg", &path_to_shaders.to_string());
-        let (mut context, el, wc) = Rltk::init_raw(width_chars * 8, height_chars * 8, window_title, path_to_shaders);
+        let mut context = Rltk::init_raw(width_chars * 8, height_chars * 8, window_title, path_to_shaders);
         let font = context.register_font(font::Font::load(&font_path.to_string(), (8,8)));
         context.register_console(SimpleConsole::init(width_chars, height_chars, &context.gl), font);
-        (context, el, wc)
+        context
     }
 
     // Quick initialization for when you just want an 8x16 VGA font terminal
-    pub fn init_simple8x16<S: ToString>(width_chars : u32, height_chars: u32, window_title: S, path_to_shaders: S) -> ( Rltk, glutin::event_loop::EventLoop<()>, glutin::WindowedContext<glutin::PossiblyCurrent> ) {
+    pub fn init_simple8x16<S: ToString>(width_chars : u32, height_chars: u32, window_title: S, path_to_shaders: S) -> Rltk {
         let font_path = format!("{}/vga8x16.jpg", &path_to_shaders.to_string());
-        let (mut context, el, wc) = Rltk::init_raw(width_chars * 8, height_chars * 16, window_title, path_to_shaders);
+        let mut context = Rltk::init_raw(width_chars * 8, height_chars * 16, window_title, path_to_shaders);
         let font = context.register_font(font::Font::load(&font_path.to_string(), (8,16)));
         context.register_console(SimpleConsole::init(width_chars, height_chars, &context.gl), font);
-        (context, el, wc)
+        context
     }    
 
     // Registers a font, and returns its handle number. Also loads it into OpenGL.
@@ -125,11 +132,19 @@ impl Console for Rltk {
 
 // Runs the RLTK application, calling into the provided gamestate handler every tick.
 #[allow(non_snake_case)]
-pub fn main_loop(mut rltk : Rltk, mut gamestate: Box<GameState>, el: glutin::event_loop::EventLoop<()>, wc : glutin::WindowedContext<glutin::PossiblyCurrent>) {
+pub fn main_loop(mut rltk : Rltk, mut gamestate: Box<GameState>) {
     let now = Instant::now();
     let mut prev_seconds = now.elapsed().as_secs();
     let mut prev_ms = now.elapsed().as_millis();
     let mut frames = 0;
+
+    // We're doing a little dance here to get around lifetime/borrow checking.
+    // Removing the context data from RLTK in an atomic swap, so it isn't borrowed after move.
+    let wrap = std::mem::replace(&mut rltk.context_wrapper, None);
+    let unwrap = wrap.unwrap();
+
+    let el = unwrap.el;
+    let wc = unwrap.wc;
 
     el.run(move |event, _, control_flow| {
         //println!("{:?}", event);
@@ -167,13 +182,8 @@ pub fn main_loop(mut rltk : Rltk, mut gamestate: Box<GameState>, el: glutin::eve
                 }
 
                 WindowEvent::KeyboardInput { device_id : _, input } => {
-                    match input.state {
-                        _Pressed => {
-                            let key = input.virtual_keycode.unwrap();
-                            rltk.key = Some(key);
-                        }
-                        _ => {}
-                    }
+                    let key = input.virtual_keycode.unwrap();
+                    rltk.key = Some(key);
                 }                
 
                 _ => (),

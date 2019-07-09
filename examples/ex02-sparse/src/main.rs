@@ -66,7 +66,7 @@ fn main() {
     // to where it can find the font files and shader files.
     // These would normally be "resources" rather than "../../resources" - but to make it
     // work in the repo without duplicating, they are a relative path.
-    let (mut context, el, wc) = Rltk::init_simple8x8(80, 50, "Hello RLTK World", "../../resources");
+    let mut context = Rltk::init_simple8x8(80, 50, "Hello RLTK World", "../../resources");
 
     // We want to add a second layer, using an 8x16 VGA font. It looks nicer, and shows how
     // RLTK can have layers.
@@ -83,5 +83,5 @@ fn main() {
 
     // Call into RLTK to run the main loop. This handles rendering, and calls back into State's tick
     // function every cycle.
-    rltk::main_loop(context, Box::new(gs), el, wc);
+    rltk::main_loop(context, Box::new(gs));
 }
