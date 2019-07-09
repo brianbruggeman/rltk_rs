@@ -31,6 +31,7 @@ pub use self::fieldofview::field_of_view;
 pub use self::geometry::{ distance2d, distance2d_squared };
 pub use self::dijkstra::DijkstraMap;
 pub use self::astar::{a_star_search, NavigationPath};
+pub use glutin::event::VirtualKeyCode;
 
 pub trait GameState {
     fn tick(&mut self, ctx : &mut Rltk);

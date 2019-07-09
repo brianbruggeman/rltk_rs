@@ -149,16 +149,16 @@ pub fn main_loop(mut rltk : Rltk, mut gamestate: Box<GameState>) {
     el.run(move |event, _, control_flow| {
         //println!("{:?}", event);
         *control_flow = ControlFlow::Poll;
-        rltk.left_click = false;
-        rltk.key = None;
-
-        if event == Event::EventsCleared {
-            //println!("tock");
-            tock(&mut rltk, &mut gamestate, &mut frames, &mut prev_seconds, &mut prev_ms, &now);
-            wc.swap_buffers().unwrap();
-        }
 
         match event {
+            Event::NewEvents(_) => {
+                rltk.left_click = false;
+                rltk.key = None;
+            }
+            Event::EventsCleared => {
+                tock(&mut rltk, &mut gamestate, &mut frames, &mut prev_seconds, &mut prev_ms, &now);
+                wc.swap_buffers().unwrap();
+            }
             Event::LoopDestroyed => return,
             Event::WindowEvent { ref event, .. } => match event {
                 WindowEvent::Resized(logical_size) => {
@@ -181,9 +181,16 @@ pub fn main_loop(mut rltk : Rltk, mut gamestate: Box<GameState>) {
                     rltk.left_click = true;
                 }
 
-                WindowEvent::KeyboardInput { device_id : _, input } => {
-                    let key = input.virtual_keycode.unwrap();
-                    rltk.key = Some(key);
+                WindowEvent::KeyboardInput {
+                    input:
+                        glutin::event::KeyboardInput { virtual_keycode: Some(virtual_keycode),
+                        state : glutin::event::ElementState::Pressed,
+                        ..
+                    },
+                    ..
+                } => {
+                    //println!("{:?}", event);
+                    rltk.key = Some(*virtual_keycode);
                 }                
 
                 _ => (),
@@ -191,8 +198,11 @@ pub fn main_loop(mut rltk : Rltk, mut gamestate: Box<GameState>) {
             _ => (),
         }
 
-        //tock(&mut rltk, &mut gamestate, &mut frames, &mut prev_seconds, &mut prev_ms, &now);
-        //wc.swap_buffers().unwrap();
+        /*if event == Event::EventsCleared {
+            //println!("tock");
+            tock(&mut rltk, &mut gamestate, &mut frames, &mut prev_seconds, &mut prev_ms, &now);
+            wc.swap_buffers().unwrap();
+        }*/
     });
 }
 
